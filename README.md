@@ -1,5 +1,5 @@
 ﻿<p align="center">
-  <img src="https://i.postimg.cc/Xv2nKS46/banner.png" alt="Formulario" width=100%/>
+  <img src="https://github.com/izipay-pe/Imagenes/blob/main/logos_izipay/logo-izipay-banner-1140x100.png?raw=true" alt="Formulario" width=100%/>
 </p>
 
 # Embedded-PaymentForm-PHP
@@ -25,7 +25,7 @@ Este manual está diseñado para ayudarte a comprender el flujo de la integraci�
 > En la última actualización se agregaron los campos: **nombre del tarjetahabiente** y **correo electrónico** (Este último campo se visualizará solo si el dato no se envía en la creación del formtoken).
 
 <p align="center">
-  <img src="https://github.com/izipay-pe/Imagenes/blob/main/formulario_incrustado/Imagen-Formulario-Incrustado.png" alt="Formulario" width="350"/>
+  <img src="https://github.com/izipay-pe/Imagenes/blob/main/formulario_incrustado/Imagen-Formulario-Incrustado.png?raw=true" alt="Formulario" width="350"/>
 </p>
 
 ## 🔑 2. Requisitos Previos
@@ -88,7 +88,7 @@ define("HMAC_SHA256","~ CHANGE_ME_HMAC_SHA_256 ~");
 
 ## 💻4.1. Desplegar pasarela
 ### Autentificación
-Extraer las claves de `usuario` y `contraseña` del Backoffice Vendedor, concatenar `usuario:contraseña` y agregarlo en la solicitud del encabezado `Authorization`.
+Extraer las claves de `usuario` y `contraseña` del Backoffice Vendedor, concatenar `usuario:contraseña` y agregarlo en la solicitud del encabezado `Authorization`. Podrás encontrarlo en el archivo `keys.example.php`.
 ```php
 $auth = USERNAME.":".PASSWORD;
 ...
@@ -98,7 +98,7 @@ curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 ```
 ℹ️ Para más información: [Autentificación](https://secure.micuentaweb.pe/doc/es-PE/rest/V4.0/javascript/guide/embedded/keys.html)
 ### Crear formtoken
-Para configurar la pasarela se necesita generar un formtoken. Se realizará una solicitud API REST a la api de creación de pagos:  `https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment` con los datos de la compra para generar el formtoken
+Para configurar la pasarela se necesita generar un formtoken. Se realizará una solicitud API REST a la api de creación de pagos:  `https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment` con los datos de la compra para generar el formtoken. Podrás encontrarlo en el archivo `keys.example.php`.
 
 ```php
 function formToken(){
@@ -157,7 +157,7 @@ Body:
 ## 💳4.2. Analizar resultado del pago
 
 ### Validación de firma
-Se configura la función `checkhash()` que realizará la validación de los datos del parámetro `kr-answer` utilizando una clave de encriptacón definida por el parámetro `kr-hash-key`
+Se configura la función `checkhash()` que realizará la validación de los datos del parámetro `kr-answer` utilizando una clave de encriptacón definida por el parámetro `kr-hash-key`. Podrás encontrarlo en el archivo `keys.example.php`.
 
 ```php
 function checkHash(){
@@ -194,7 +194,7 @@ $answer = json_decode($_POST["kr-answer"], true);
 La IPN es una notificación de servidor a servidor (servidor de Izipay hacia el servidor del comercio) que facilita información en tiempo real y de manera automática cuando se produce un evento, por ejemplo, al registrar una transacción.
 
 
-Se realiza la verificación de la firma utilizando la función `checkhash()` y se devuelve al servidor de izipay un mensaje confirmando el estado del pago.
+Se realiza la verificación de la firma utilizando la función `checkhash()` y se devuelve al servidor de izipay un mensaje confirmando el estado del pago. Podrás encontrarlo en el archivo `ipn.php`.
 
 ```php
 if (!checkHash()) {
