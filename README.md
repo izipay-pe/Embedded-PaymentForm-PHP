@@ -6,15 +6,15 @@
 
 ## Índice
 
-➡️ [1. Introducción](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#%EF%B8%8F-1-introducci%C3%B3n)  
-🔑 [2. Requisitos previos](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-2-requisitos-previos)  
-🚀 [3. Ejecutar ejemplo](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-3-ejecutar-ejemplo)  
-🔗 [4. Pasos de integración](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#4-pasos-de-integraci%C3%B3n)  
-💻 [4.1. Desplegar pasarela](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#41-desplegar-pasarela)  
-💳 [4.2. Analizar resultado de pago](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#42-analizar-resultado-del-pago)  
-📡 [4.3. Pase a producción](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#43pase-a-producci%C3%B3n)  
-🎨 [5. Personalización](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-5-personalizaci%C3%B3n)  
-📚 [6. Consideraciones](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-6-consideraciones)
+➡️ [1. Introducción](#-1-introducci%C3%B3n)  
+🔑 [2. Requisitos previos](#-2-requisitos-previos)  
+🚀 [3. Ejecutar ejemplo](#-3-ejecutar-ejemplo)  
+🔗 [4. Pasos de integración](#4-pasos-de-integraci%C3%B3n)  
+💻 [4.1. Desplegar pasarela](#41-desplegar-pasarela)  
+💳 [4.2. Analizar resultado de pago](#42-analizar-resultado-del-pago)  
+📡 [4.3. Pase a producción](#43pase-a-producci%C3%B3n)  
+🎨 [5. Personalización](#-5-personalizaci%C3%B3n)  
+📚 [6. Consideraciones](#-6-consideraciones)
 
 ## ➡️ 1. Introducción
 
@@ -56,7 +56,7 @@ git clone https://github.com/izipay-pe/Embedded-PaymentForm-Php.git
 
 ### Datos de conexión 
 
-Reemplace **[CHANGE_ME]** con sus credenciales de `API REST` extraídas desde el Back Office Vendedor, revisar [Requisitos previos](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-2-requisitos-previos).
+Reemplace **[CHANGE_ME]** con sus credenciales de `API REST` extraídas desde el Back Office Vendedor, revisar [Requisitos previos](#-2-requisitos-previos).
 
 - Editar el archivo `keys.example.php` en la ruta raiz del proyecto:
 ```php
@@ -91,10 +91,11 @@ define("HMAC_SHA256","~ CHANGE_ME_HMAC_SHA_256 ~");
 Extraer las claves de `usuario` y `contraseña` del Backoffice Vendedor, concatenar `usuario:contraseña` y agregarlo en la solicitud del encabezado `Authorization`. Podrás encontrarlo en el archivo `keys.example.php`.
 ```php
 $auth = USERNAME.":".PASSWORD;
-...
-...
-curl_setopt($curl, CURLOPT_USERPWD, $auth);
-curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+
+$headers = array(
+    "Authorization: Basic " . base64_encode($auth),
+    "Content-Type: application/json"
+);
 ```
 ℹ️ Para más información: [Autentificación](https://secure.micuentaweb.pe/doc/es-PE/rest/V4.0/javascript/guide/embedded/keys.html)
 ### Crear formtoken
@@ -102,28 +103,31 @@ Para configurar la pasarela se necesita generar un formtoken. Se realizará una 
 
 ```php
 function formToken(){
+    $url = "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment";
+    ..
+    
     $body = [
         "amount" => $_POST["amount"] * 100,
         "currency" => $_POST["currency"],
         "orderId" => $_POST["orderId"],
         "customer" => [
           "email" => $_POST["email"],
-           ...
-           ...
-          ]
+          ..
+          ..
         ],
     ];
 
-    $url = "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment";
-    $auth = USERNAME.":".PASSWORD;
-
     $curl = curl_init($url);
-    ...
-    ...
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    ..
+    ..
+
     $raw_response = curl_exec($curl);
+
     $response = json_decode($raw_response , true);
-    return $response;
+
+    $formToken = $response["answer"]["formToken"];
+
+    return $formToken;
 }
 
 ```
@@ -140,6 +144,7 @@ kr-public-key="<?= PUBLIC_KEY ?>"
 kr-post-url-success="result.php" kr-language="es-Es">
 </script>
 
+<!-- Estilos de la pasarela de pagos -->
 <link rel="stylesheet" href="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.css">
 <script type="text/javascript" src="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js">
 </script>
@@ -157,29 +162,22 @@ Body:
 ## 💳4.2. Analizar resultado del pago
 
 ### Validación de firma
-Se configura la función `checkhash()` que realizará la validación de los datos del parámetro `kr-answer` utilizando una clave de encriptacón definida por el parámetro `kr-hash-key`. Podrás encontrarlo en el archivo `keys.example.php`.
+Se configura la función `checkHash` que realizará la validación de los datos recibidos por el servidor luego de realizar el pago mediante el parámetro `kr-answer` utilizando una clave de encriptación definida en `key`. Podrás encontrarlo en el archivo `keys.example.php`.
 
 ```php
-function checkHash(){
-    if ($_POST['kr-hash-key'] == "sha256_hmac") {
-        $key = HMAC_SHA256;
-    } elseif ($_POST['kr-hash-key'] == "password") {
-        $key = PASSWORD;
-    } else {
-        return false; 
-    }  
-
+function checkHash($key){
     $krAnswer = str_replace('\/', '/',  $_POST["kr-answer"]);
+
     $calculateHash = hash_hmac("sha256", $krAnswer, $key);
 
     return ($calculateHash == $_POST["kr-hash"]) ;
 }
 ```
 
-Se valida que la firma recibida es correcta
+Se valida que la firma recibida es correcta. Para la validación de los datos recibidos a través de la pasarela de pagos (front) se utiliza la clave `HMACSHA256`.
 
 ```php
-if (!checkHash()) {
+if (!checkHash(HMAC_SHA256)) {
   throw new Exception("Invalid signature");
 }
 ```
@@ -194,10 +192,14 @@ $answer = json_decode($_POST["kr-answer"], true);
 La IPN es una notificación de servidor a servidor (servidor de Izipay hacia el servidor del comercio) que facilita información en tiempo real y de manera automática cuando se produce un evento, por ejemplo, al registrar una transacción.
 
 
-Se realiza la verificación de la firma utilizando la función `checkhash()` y se devuelve al servidor de izipay un mensaje confirmando el estado del pago. Podrás encontrarlo en el archivo `ipn.php`.
+Se realiza la verificación de la firma utilizando la función `checkHash`. Para la validación de los datos recibidos a través de la IPN (back) se utiliza la clave `PASSWORD`. Se devuelve al servidor de izipay un mensaje confirmando el estado del pago.
+
+Se recomienda verificar el parámetro `orderStatus` para determinar si su valor es `PAID` o `UNPAID`. De esta manera verificar si el pago se ha realizado con éxito.
+
+Podrás encontrarlo en el archivo `ipn.php`.
 
 ```php
-if (!checkHash()) {
+if (!checkHash(PASSWORD)) {
     throw new Exception("Invalid signature");
 }
 
@@ -205,6 +207,7 @@ $answer = json_decode($_POST["kr-answer"], true);
 
 $transaction = $answer['transactions'][0];
 
+//Verificar orderStatus: PAID / UNPAID
 $orderStatus = $answer['orderStatus'];
 $orderId = $answer['orderDetails']['orderId'];
 $transactionUuid = $transaction['uuid'];
@@ -212,10 +215,10 @@ $transactionUuid = $transaction['uuid'];
 print 'OK! OrderStatus is ' . $orderStatus;
 ```
 
-La IPN debe ir configurada en el Backoffice Vendedor, en `Configuración -> Reglas de notificación -> URL de notificación al final del pago`
+La ruta o enlace de la IPN debe ir configurada en el Backoffice Vendedor, en `Configuración -> Reglas de notificación -> URL de notificación al final del pago`
 
 <p align="center">
-  <img src="https://i.postimg.cc/zfx5JbQP/ipn.png" alt="Formulario" width=80%/>
+  <img src="https://i.postimg.cc/XNGt9tyt/ipn.png" alt="Formulario" width=80%/>
 </p>
 
 ℹ️ Para más información: [Analizar IPN](https://secure.micuentaweb.pe/doc/es-PE/rest/V4.0/api/kb/ipn_usage.html)
@@ -234,7 +237,7 @@ Puede intentar realizar una transacción utilizando una tarjeta de prueba con la
 
 ## 📡4.3.Pase a producción
 
-Reemplace **[CHANGE_ME]** con sus credenciales de PRODUCCIÓN de `API REST` extraídas desde el Back Office Vendedor, revisar [Requisitos Previos](https://github.com/izipay-pe/Readme-Template/tree/main?tab=readme-ov-file#-2-requisitos-previos).
+Reemplace **[CHANGE_ME]** con sus credenciales de PRODUCCIÓN de `API REST` extraídas desde el Back Office Vendedor, revisar [Requisitos Previos](#-2-requisitos-previos).
 
 - Editar en `keys.example.php` en la ruta raiz del proyecto:
 ```php
